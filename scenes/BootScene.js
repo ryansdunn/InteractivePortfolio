@@ -1,8 +1,9 @@
 /* =============================================================================
  * scenes/BootScene.js
  * -----------------------------------------------------------------------------
- * Generates every texture up front (instant world transitions), then routes to
- * either a world (if ?world=… is present and valid) or the title screen.
+ * Loads the generated Tiled world (assets/maps/world.tmj) + terrain tileset,
+ * generates the sprite textures, then routes to the title screen or — for a
+ * ?world=dev|music|teaching deep-link — straight into that biome.
  * ========================================================================== */
 
 class BootScene extends Phaser.Scene {
@@ -10,21 +11,19 @@ class BootScene extends Phaser.Scene {
     super({ key: 'BootScene' });
   }
 
+  preload() {
+    this.load.image('terrain', 'assets/tilesets/terrain.png');
+    this.load.tilemapTiledJSON('world', 'assets/maps/world.tmj');
+  }
+
   create() {
     AssetFactory.generateAll(this);
 
-    // ?world=dev|music|teaching deep-links straight into that wing's entry room.
-    // No param → the framing title screen.
     const param = new URLSearchParams(window.location.search).get('world');
-    const room = param && BootScene.SPAWN_ROOMS[param];
-    if (room) {
-      this.scene.start('Overworld', { spawn: room });
+    if (param && WORLD.biomes[param]) {
+      this.scene.start('World', { spawn: param });
     } else {
       this.scene.start('TitleScene');
     }
-  }
-
-  static get SPAWN_ROOMS() {
-    return { hub: 'hub_entry', dev: 'dev_entry', music: 'music_entry', teaching: 'teach_entry' };
   }
 }

@@ -18,20 +18,22 @@ const AudioManager = {
   enabled: false,
   FADE: 1.2,            // seconds
 
-  init() {
-    if (this.ctx) return;
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    this.ctx = new AC();
-    this.master = this.ctx.createGain();
-    this.master.gain.value = 0.9;
-    this.master.connect(this.ctx.destination);
-    this.enabled = true;
-  },
+  /** No-op — AudioContext is created lazily on first user gesture via resume(). */
+  init() {},
 
-  /** Browsers suspend audio until a user gesture — call this on first input. */
+  /** Create the AudioContext on first user gesture (avoids Chrome autoplay policy),
+   *  then resume if suspended. Safe to call repeatedly. */
   resume() {
-    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+    if (!this.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      this.ctx = new AC();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = 0.9;
+      this.master.connect(this.ctx.destination);
+      this.enabled = true;
+    }
+    if (this.ctx.state === 'suspended') this.ctx.resume();
   },
 
   /** Crossfade to a world's ambient bed. Re-calling with the same id is a no-op. */
@@ -54,6 +56,24 @@ const AudioManager = {
   stop() {
     if (this.current) this._fadeOutAndStop(this.current);
     this.current = null;
+  },
+
+  /** A soft two-note bell — played when the visitor finds a fragment. */
+  chime() {
+    if (!this.enabled) return;
+    this.resume();
+    const now = this.ctx.currentTime;
+    const g = this.ctx.createGain();
+    g.connect(this.master);
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 1.3);
+    [880, 1320].forEach((f, i) => {
+      const o = this.ctx.createOscillator();
+      o.type = 'sine'; o.frequency.value = f;
+      const og = this.ctx.createGain(); og.gain.value = i ? 0.4 : 1;
+      o.connect(og).connect(g); o.start(now + i * 0.06); o.stop(now + 1.4);
+    });
   },
 
   // --- internals ---------------------------------------------------------

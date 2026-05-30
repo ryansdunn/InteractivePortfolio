@@ -7,10 +7,13 @@
   <meta name="description" content="An interactive RPG portfolio. Walk around, talk to characters, and discover who Ryan Dunn is — a builder in code, music, and a classroom in Spain." />
 
   <!-- Phaser 3 + SoundCloud Widget API via CDN. No build step. -->
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"
+          integrity="sha384-Fi7F0CYQBHYa+s2vvYJeiqvOQf3tuZ28vafRGXvMt7ijxNTVf3+eXPkNRIUi9JD2"
+          crossorigin="anonymous"></script>
   <script src="https://w.soundcloud.com/player/api.js"></script>
 
   <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="icon" href="data:,">
 </head>
 <body>
   <!-- Phaser canvas mounts here -->
@@ -19,7 +22,8 @@
   <!-- DOM overlay layer (HUD) -->
   <div id="profile-card" class="overlay"></div>
   <div id="hearts" class="overlay"></div>
-  <div id="minimap" class="overlay"></div>
+  <div id="fragment" class="overlay"></div>
+  <div id="dialogue-box"></div>
   <div id="info-panel"></div>
   <div id="music-player"></div>
   <div id="hint" class="overlay"></div>
@@ -29,8 +33,7 @@
        1) config  2) core engine  3) components  4) scenes/worlds  5) bootstrap -->
 
   <!-- 1) Config (pure data) -->
-  <script src="config/worlds.js"></script>
-  <script src="config/dungeon.js"></script>
+  <script src="config/world.js"></script>
   <script src="config/projects.js"></script>
   <script src="config/music.js"></script>
   <script src="config/doubts.js"></script>
@@ -39,16 +42,15 @@
   <script src="core/AssetFactory.js"></script>
   <script src="core/GameState.js"></script>
   <script src="core/AudioManager.js"></script>
-  <script src="core/DungeonMap.js"></script>
   <script src="core/CombatSystem.js"></script>
-  <script src="core/OverworldScene.js"></script>
+  <script src="core/TiledWorldScene.js"></script>
 
   <!-- 3) Components -->
   <script src="components/DialogueBox.js"></script>
   <script src="components/ProfileCard.js"></script>
   <script src="components/InfoPanel.js"></script>
   <script src="components/MusicPlayer.js"></script>
-  <script src="components/Minimap.js"></script>
+  <script src="components/FragmentCard.js"></script>
 
   <!-- 4) Scenes -->
   <script src="scenes/BootScene.js"></script>

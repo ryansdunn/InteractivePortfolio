@@ -13,7 +13,7 @@ const Portfolio = {
   profileCard: null,
   infoPanel: null,
   musicPlayer: null,
-  minimap: null,
+  fragmentCard: null,
   modalOpen: false,
   _hintEl: null,
   _toastEl: null,
@@ -41,7 +41,7 @@ window.addEventListener('load', () => {
   Portfolio.profileCard = new ProfileCard();
   Portfolio.infoPanel = new InfoPanel();
   Portfolio.musicPlayer = new MusicPlayer();
-  Portfolio.minimap = new Minimap();
+  Portfolio.fragmentCard = new FragmentCard();
 
   // 2) Audio (placeholder synth beds; resumed on first user gesture).
   AudioManager.init();
@@ -65,7 +65,7 @@ window.addEventListener('load', () => {
     scene: [
       BootScene,
       TitleScene,
-      OverworldScene,
+      TiledWorldScene,
     ],
   };
 
@@ -80,5 +80,4 @@ window.addEventListener('load', () => {
     if (e.key === 'm' || e.key === 'M') Portfolio.musicPlayer.toggle();
   });
 
-  window.PortfolioGame = game; // handy for debugging in the console
 });

@@ -8,7 +8,7 @@
  * SWAPPING IN KENNEY ASSETS LATER
  *   These are deliberately simple, palette-driven placeholders. To replace them
  *   with real Kenney.nl pixel art, preload the spritesheets in BootScene and
- *   make DungeonMap read texture keys from config instead of calling these
+ *   swap these sprite generators for a Kenney character atlas preloaded in BootScene
  *   generators. Texture KEYS are namespaced per world (`<worldId>-floor`, etc.)
  *   and per character (`npc-<id>`), which is exactly how a Kenney atlas would
  *   be keyed — so the engine code wouldn't need to change.
@@ -17,19 +17,13 @@
 const AssetFactory = {
   TILE: 32,
 
-  /** Build every texture this game needs. Call once in BootScene. */
+  /** Build the runtime SPRITE textures. Terrain comes from the Tiled tileset, so
+   *  this only makes the player, NPCs, Doubts, sword slash, and prompt bubble. */
   generateAll(scene) {
     this.generatePlayer(scene);
     this.generatePromptBubble(scene);
     this.generateSlash(scene);
-    this.generateDoor(scene);
 
-    Object.values(REGIONS).forEach((region) => this.generateRegion(scene, region));
-    // Decorations are authored per-room now; generate each one in its region palette.
-    Object.values(ROOMS).forEach((room) => {
-      const p = REGIONS[room.region].palette;
-      (room.decorations || []).forEach((d) => this.generateDecoration(scene, room.region, d.type, p));
-    });
     Object.values(CHARACTERS).forEach((c) => this.generateNpc(scene, c));
     Object.values(DOUBTS).forEach((d) => this.generateDoubt(scene, d));
   },

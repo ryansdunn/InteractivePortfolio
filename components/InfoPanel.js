@@ -24,7 +24,7 @@ class InfoPanel {
 
   open(character) {
     const pa = character.panel;
-    const accent = (REGIONS[character.world] && REGIONS[character.world].hudColor) || '#4f7cff';
+    const accent = (WORLD.biomes[character.world] && WORLD.biomes[character.world].hudColor) || '#4f7cff';
 
     const chips = (pa.tech || [])
       .map((t) => `<span class="ip-chip">${esc(t)}</span>`).join('');
