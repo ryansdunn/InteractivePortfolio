@@ -42,6 +42,8 @@ window.addEventListener('load', () => {
   Portfolio.infoPanel = new InfoPanel();
   Portfolio.musicPlayer = new MusicPlayer();
   Portfolio.fragmentCard = new FragmentCard();
+  Portfolio.mobileControls = new MobileControls();
+  Portfolio.mobileControls.init();
 
   // 2) Audio (placeholder synth beds; resumed on first user gesture).
   AudioManager.init();

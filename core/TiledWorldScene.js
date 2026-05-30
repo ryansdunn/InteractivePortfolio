@@ -52,6 +52,13 @@ class TiledWorldScene extends Phaser.Scene {
     this.dialogue = new DialogueBox(this);
     this.combat = new CombatSystem(this);
 
+    // Wire mobile action button (context-aware: dialogue → talk → attack)
+    Portfolio.mobileControls.onAction = () => {
+      if (this.dialogue.isOpen) { this.dialogue.advance(); return; }
+      if (this.nearbyNpc && !Portfolio.modalOpen) { this._doInteract(); return; }
+      if (!this.combat._blocked()) this.combat._tryAttack();
+    };
+
     this.nearbyNpc = null;
     this.currentBiome = null;
     this.discoveredFragments = new Set();
@@ -184,15 +191,28 @@ class TiledWorldScene extends Phaser.Scene {
     b.setVelocity(0);
     if (blocked) return;
     const speed = 165;
-    const left = this.cursors.left.isDown || this.keys.A.isDown;
-    const right = this.cursors.right.isDown || this.keys.D.isDown;
-    const up = this.cursors.up.isDown || this.keys.W.isDown;
-    const down = this.cursors.down.isDown || this.keys.S.isDown;
-    let fx = 0, fy = 0;
-    if (left) { b.setVelocityX(-speed); fx = -1; } else if (right) { b.setVelocityX(speed); fx = 1; }
-    if (up) { b.setVelocityY(-speed); fy = -1; } else if (down) { b.setVelocityY(speed); fy = 1; }
-    b.velocity.normalize().scale(speed);
-    if (fx || fy) { this.facing = { x: fx, y: fy }; if (fx) this.player.setFlipX(fx < 0); }
+    let vx = 0, vy = 0;
+
+    // Keyboard
+    if (this.cursors.left.isDown || this.keys.A.isDown) vx -= 1;
+    if (this.cursors.right.isDown || this.keys.D.isDown) vx += 1;
+    if (this.cursors.up.isDown || this.keys.W.isDown) vy -= 1;
+    if (this.cursors.down.isDown || this.keys.S.isDown) vy += 1;
+
+    // Virtual joystick (mobile only; no-op on desktop)
+    const mc = Portfolio.mobileControls;
+    if (mc && mc.active) {
+      const { x: jx, y: jy } = mc.joystick;
+      if (Math.abs(jx) > 0.12 || Math.abs(jy) > 0.12) { vx = jx; vy = jy; }
+    }
+
+    if (vx === 0 && vy === 0) return;
+    const len = Math.hypot(vx, vy);
+    b.setVelocity(vx / len * speed, vy / len * speed);
+    const fx = vx > 0.15 ? 1 : vx < -0.15 ? -1 : 0;
+    const fy = vy > 0.15 ? 1 : vy < -0.15 ? -1 : 0;
+    if (fx || fy) { this.facing = { x: fx || this.facing.x, y: fy || this.facing.y }; }
+    if (vx !== 0) this.player.setFlipX(vx < 0);
   }
 
   _updateProximity() {
@@ -247,6 +267,10 @@ class TiledWorldScene extends Phaser.Scene {
     if (!pressed) return;
     if (this.dialogue.isOpen) { this.dialogue.advance(); return; }
     if (blocked || !this.nearbyNpc) return;
+    this._doInteract();
+  }
+
+  _doInteract() {
     const n = this.nearbyNpc;
     Portfolio.setHint('');
     this.dialogue.open(n.character, () => {

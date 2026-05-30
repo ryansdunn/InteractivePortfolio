@@ -39,7 +39,10 @@ class CombatSystem {
 
     this.slash = scene.add.image(0, 0, 'slash').setVisible(false).setDepth(1e6);
     this.attackKey = scene.keys.J;
-    scene.input.on('pointerdown', () => { if (!this._blocked()) this._tryAttack(); });
+    // Canvas click attacks on desktop only; mobile uses the action button instead.
+    scene.input.on('pointerdown', () => {
+      if (!this._blocked() && !(Portfolio.mobileControls && Portfolio.mobileControls.active)) this._tryAttack();
+    });
 
     this.heartsEl = document.getElementById('hearts');
     if (this.heartsEl) this.heartsEl.classList.add('show');
