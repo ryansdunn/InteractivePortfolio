@@ -76,7 +76,7 @@ function mkNoise(seed) {
 // overlay tiles have transparent backgrounds so the ground shows through.
 const TILES = ['deep_water', 'water', 'sand', 'grass', 'grass_flowers', 'path',
   'cliff', 'ruin_floor', 'tree', 'rock', 'ruin_wall', 'bush', 'reeds', 'flowers',
-  'signpost', 'fragment'];
+  'signpost', 'fragment', 'snow'];
 const ID = Object.fromEntries(TILES.map((n, i) => [n, i]));
 const COLLIDES = ['deep_water', 'water', 'cliff', 'tree', 'rock', 'ruin_wall'].map((n) => ID[n]);
 const ATLAS_COLS = 6;
@@ -111,6 +111,7 @@ function buildAtlas() {
     flowers: (o) => { [[5, 8, 240, 90, 110], [9, 6, 240, 210, 90], [8, 11, 235, 235, 245]].forEach(([x, y, r, g, b]) => { px(o[0], o[1], x, y, r, g, b); px(o[0], o[1], x + 1, y, r, g, b); }); },
     signpost: (o) => { rect(o[0], o[1], 7, 6, 8, 15, 110, 78, 44); rect(o[0], o[1], 2, 3, 13, 7, 156, 120, 72); rect(o[0], o[1], 2, 3, 13, 3, 120, 88, 50); },
     fragment: (o) => { disc(o[0], o[1], 8, 8, 6, 200, 220, 255, 70); rect(o[0], o[1], 7, 5, 8, 11, 235, 240, 255); rect(o[0], o[1], 5, 7, 10, 8, 235, 240, 255); },
+    snow: (o) => { fill(o[0], o[1], 218, 230, 252); speck(o[0], o[1], 14, 200, 215, 245, 23); speck(o[0], o[1], 8, 248, 252, 255, 17); speck(o[0], o[1], 4, 160, 185, 220, 11); },
   };
 
   TILES.forEach((name, id) => {
@@ -131,7 +132,7 @@ function build() {
   const biomeKeys = Object.keys(WORLD.biomes);
   const flavorOf = {};
   biomeKeys.forEach((k) => (flavorOf[k] = WORLD.biomes[k].flavor));
-  const waterLevel = { coast: 0.46, meadow: 0.30, forest_ruins: 0.36, wilds: 0.37 };
+  const waterLevel = { coast: 0.34, meadow: 0.30, forest_ruins: 0.36, wilds: 0.37 };
   const forestThresh = { coast: 0.62, meadow: 0.74, forest_ruins: 0.50, wilds: 0.62 };
 
   const ground = new Array(W * H);
@@ -177,6 +178,9 @@ function build() {
       const rd = Math.sqrt((x - a.tx) ** 2 + (y - a.ty) ** 2);
       if (rd < 16 && n.value(x * 0.3, y * 0.3) > 0.62) g = 'ruin_floor';
     }
+    // biome terrain overrides: dev→snowy, teaching→sandy beach
+    if (bk === 'dev' && g === 'grass') g = 'snow';
+    if (bk === 'teaching' && g === 'grass') g = 'sand';
     ground[i] = g;
 
     // overlay (trees / rocks / reeds / flowers), only on land
