@@ -37,14 +37,14 @@ const WORLD = {
       anchor: { tx: 34, ty: 60 }, flavor: 'forest_ruins',
       hudColor: '#4f7cff',
       palette: { accent: 0x4f7cff },
-      ambient: { type: 'sine', freq: 84, gain: 0.05, detune: 3 },
+      ambient: { type: 'sine', freq: 84, gain: 0.7, detune: 3, src: 'assets/audio/the_lab.wav' },
     },
     teaching: {
       name: 'Teaching', subtitle: 'a sunlit meadow',
       anchor: { tx: 60, ty: 34 }, flavor: 'meadow',
       hudColor: '#e8772e',
       palette: { accent: 0xe8772e },
-      ambient: { type: 'triangle', freq: 196, gain: 0.04, detune: 4 },
+      ambient: { type: 'triangle', freq: 196, gain: 0.7, detune: 4, src: 'assets/audio/teaching.wav' },
     },
     music: {
       name: 'Music', subtitle: 'a dreaming shore',

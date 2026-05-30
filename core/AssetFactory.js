@@ -22,7 +22,7 @@ const AssetFactory = {
   generateAll(scene) {
     this.generatePlayer(scene);
     this.generatePromptBubble(scene);
-    this.generateSlash(scene);
+    this.generateSword(scene);
 
     Object.values(CHARACTERS).forEach((c) => this.generateNpc(scene, c));
     Object.values(DOUBTS).forEach((d) => this.generateDoubt(scene, d));
@@ -207,18 +207,25 @@ const AssetFactory = {
     });
   },
 
-  // --- sword swing arc (positioned/rotated per facing at attack time) ----
-  generateSlash(scene) {
-    this._tex(scene, 'slash', 48, 48, (g) => {
-      // A bright crescent sweeping out from the player.
-      g.lineStyle(7, 0xffffff, 0.95);
-      g.beginPath();
-      g.arc(8, 24, 30, Phaser.Math.DegToRad(-52), Phaser.Math.DegToRad(52));
-      g.strokePath();
-      g.lineStyle(3, 0xbcd0ff, 0.9);
-      g.beginPath();
-      g.arc(8, 24, 22, Phaser.Math.DegToRad(-46), Phaser.Math.DegToRad(46));
-      g.strokePath();
+  // --- pixel-art sword (pointing right; rotated at runtime per facing) ---
+  generateSword(scene) {
+    // 40 wide x 10 tall. Handle on left, tip on right.
+    this._tex(scene, 'sword', 40, 10, (g) => {
+      // pommel
+      g.fillStyle(0x5a3a1e, 1).fillRect(0, 2, 3, 6);
+      // grip
+      g.fillStyle(0x7a4a2a, 1).fillRect(3, 3, 7, 4);
+      g.fillStyle(0xa06438, 1).fillRect(3, 3, 7, 2);
+      // crossguard
+      g.fillStyle(0x4a4a5a, 1).fillRect(10, 0, 4, 10);
+      g.fillStyle(0x8a8a9a, 1).fillRect(10, 0, 4, 2);
+      // blade
+      g.fillStyle(0xb8c8d8, 1).fillRect(14, 3, 20, 4);
+      g.fillStyle(0xe8f4ff, 1).fillRect(14, 3, 20, 2);
+      // tapered tip
+      g.fillStyle(0xb8c8d8, 1).fillRect(34, 3, 4, 3);
+      g.fillStyle(0xe8f4ff, 1).fillRect(34, 3, 3, 1);
+      g.fillStyle(0xb8c8d8, 1).fillRect(37, 4, 3, 1);
     });
   },
 

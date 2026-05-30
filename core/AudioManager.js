@@ -58,6 +58,45 @@ const AudioManager = {
     this.current = null;
   },
 
+  /** Short triumphant sting — played when the sword is granted at spawn. */
+  swordFanfare() {
+    if (!this.enabled) return;
+    this.resume();
+    const now = this.ctx.currentTime;
+    // G-major arpeggio: G4 B4 D5 G5, then a brief chord bloom
+    const rises = [392, 494, 587, 784];
+    rises.forEach((freq, i) => {
+      const t = now + i * 0.11;
+      const isLast = i === rises.length - 1;
+      const g = this.ctx.createGain();
+      g.connect(this.master);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.18, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + (isLast ? 1.1 : 0.16));
+      const osc = this.ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      osc.connect(g);
+      osc.start(t);
+      osc.stop(t + (isLast ? 1.2 : 0.22));
+    });
+    // Shimmer chord underneath the final note
+    [392, 494, 587].forEach((freq) => {
+      const t = now + rises.length * 0.11;
+      const g = this.ctx.createGain();
+      g.connect(this.master);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.06, t + 0.04);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+      const osc = this.ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      osc.connect(g);
+      osc.start(t);
+      osc.stop(t + 1.0);
+    });
+  },
+
   /** A soft two-note bell — played when the visitor finds a fragment. */
   chime() {
     if (!this.enabled) return;
@@ -77,6 +116,48 @@ const AudioManager = {
   },
 
   // --- internals ---------------------------------------------------------
+
+  _ATTACK_SFX: [
+    'assets/audio/attack_sounds/Untitled 2_1 #10.1.aif',
+    'assets/audio/attack_sounds/Untitled 2_1 #10.3.aif',
+    'assets/audio/attack_sounds/Untitled 2_1 #10.5.aif',
+    'assets/audio/attack_sounds/Untitled 2_1 #10.7.aif',
+  ],
+  _DAMAGE_SFX: [
+    'assets/audio/damage-taken-sounds/damage1.wav',
+    'assets/audio/damage-taken-sounds/damage2.wav',
+    'assets/audio/damage-taken-sounds/damage3.wav',
+    'assets/audio/damage-taken-sounds/damage4.wav',
+  ],
+
+  /** Play a random sword-swing sound. */
+  attackSound() {
+    const srcs = this._ATTACK_SFX;
+    this.playSfx(srcs[Math.floor(Math.random() * srcs.length)], 0.7);
+  },
+
+  /** Play a random damage-taken sound. */
+  damageSound() {
+    const srcs = this._DAMAGE_SFX;
+    this.playSfx(srcs[Math.floor(Math.random() * srcs.length)], 0.65);
+  },
+
+  /** One-shot SFX: load (cached), decode, play immediately. */
+  playSfx(src, volume = 0.7) {
+    if (!this.enabled) return;
+    this.resume();
+    this._loadBuffer(src).then((buffer) => {
+      if (!buffer) return;
+      const g = this.ctx.createGain();
+      g.gain.value = volume;
+      g.connect(this.master);
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(g);
+      source.start();
+      source.onended = () => { try { g.disconnect(); } catch (e) {} };
+    });
+  },
 
   // Decoded AudioBuffer cache keyed by src path.
   _bufferCache: {},
@@ -127,7 +208,8 @@ const AudioManager = {
   async _loadBuffer(src) {
     if (this._bufferCache[src]) return this._bufferCache[src];
     try {
-      const res = await fetch(src);
+      const encoded = src.split('/').map(encodeURIComponent).join('/');
+      const res = await fetch(encoded);
       const raw = await res.arrayBuffer();
       const buffer = await this.ctx.decodeAudioData(raw);
       this._bufferCache[src] = buffer;

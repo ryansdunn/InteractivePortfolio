@@ -37,7 +37,10 @@ class CombatSystem {
     scene.physics.add.collider(this.enemies, this.enemies);
     scene.physics.add.overlap(scene.player, this.enemies, (pl, en) => this._onPlayerHit(en));
 
-    this.slash = scene.add.image(0, 0, 'slash').setVisible(false).setDepth(1e6);
+    // The sword sprite is always visible, held at the player's side.
+    // Origin near the guard so it pivots from the hand during swings.
+    this.sword = scene.add.image(0, 0, 'sword').setOrigin(0.25, 0.5).setDepth(1e6).setScale(0.9);
+    this._swinging = false;
     this.attackKey = scene.keys.J;
     // Canvas click attacks on desktop only; mobile uses the action button instead.
     scene.input.on('pointerdown', () => {
@@ -54,6 +57,7 @@ class CombatSystem {
   update(delta) {
     const now = this.scene.time.now;
     this._blink(now);
+    this._holdSword();
     if (this._blocked()) { this._freezeEnemies(); return; }
     if (Phaser.Input.Keyboard.JustDown(this.attackKey)) this._tryAttack();
     this._regen(delta);
@@ -62,15 +66,46 @@ class CombatSystem {
     this._enemyAI();
   }
 
+  // Position the sword at the player's hand in idle/walk. During a swing the
+  // tween owns the rotation, so we skip updates until it finishes.
+  _holdSword() {
+    if (this._swinging) return;
+    const p = this.scene.player, f = this.scene.facing;
+    const baseAngle = Math.atan2(f.y, f.x);
+    // Offset the pivot point 8px from the player centre in the facing direction.
+    const ox = f.x * 8, oy = f.y * 8;
+    this.sword.setPosition(p.x + ox, p.y + oy + 2)
+      .setRotation(baseAngle + 0.35) // slight downward tilt = "ready" grip
+      .setAlpha(1).setDepth(p.depth + (f.y > 0 ? -1 : 1));
+  }
+
   // --- combat ------------------------------------------------------------
   _tryAttack() {
     const now = this.scene.time.now;
     if (now < this.attackCdUntil) return;
     this.attackCdUntil = now + 340;
+
     const f = this.scene.facing, p = this.scene.player;
-    this.slash.setPosition(p.x + f.x * 26, p.y + f.y * 26 - 4).setRotation(Math.atan2(f.y, f.x))
-      .setVisible(true).setAlpha(1).setScale(0.7);
-    this.scene.tweens.add({ targets: this.slash, scale: 1.15, alpha: 0, duration: 180, onComplete: () => this.slash.setVisible(false) });
+    const baseAngle = Math.atan2(f.y, f.x);
+    const swingSpan = 2.2; // ~126° total arc
+    const ox = f.x * 8, oy = f.y * 8;
+
+    AudioManager.attackSound();
+    this._swinging = true;
+    this.sword
+      .setPosition(p.x + ox, p.y + oy + 2)
+      .setRotation(baseAngle - swingSpan / 2)
+      .setAlpha(1).setScale(1.0)
+      .setDepth(p.depth + (f.y > 0 ? -1 : 1));
+
+    this.scene.tweens.add({
+      targets: this.sword,
+      rotation: baseAngle + swingSpan / 2,
+      duration: 180,
+      ease: 'Quad.easeOut',
+      onComplete: () => { this._swinging = false; },
+    });
+
     const hitR = 46;
     this.enemies.getChildren().slice().forEach((en) => {
       if (!en.active) return;
@@ -105,6 +140,7 @@ class CombatSystem {
     const now = this.scene.time.now;
     if (now < this.invulnUntil || this._blocked()) return;
     this.health = Math.max(0, this.health - (en.getData('damage') || 1));
+    AudioManager.damageSound();
     this._renderHearts();
     this.invulnUntil = now + 1000;
     this.lastHitTime = now;

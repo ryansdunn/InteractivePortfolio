@@ -69,6 +69,34 @@ class TiledWorldScene extends Phaser.Scene {
 
     this._updateBiome(true);
     this.cameras.main.fadeIn(450, 0, 0, 0);
+
+    if (this._shouldShowSwordIntro(data)) this._scheduleSwordIntro();
+  }
+
+  _shouldShowSwordIntro(data) {
+    // Only on the default wilds spawn (not a biome deep-link), and only once per session.
+    if (data && data.spawn && data.spawn !== 'wilds') return false;
+    if (sessionStorage.getItem('sword-intro-seen')) return false;
+    return true;
+  }
+
+  _scheduleSwordIntro() {
+    sessionStorage.setItem('sword-intro-seen', '1');
+    this.time.delayedCall(700, () => {
+      AudioManager.swordFanfare();
+      const narrator = {
+        id: '__narrator__',
+        name: '⚔  The Crossroads',
+        role: 'an ancient voice',
+        world: 'wilds',
+        dialogue: [
+          "Sometimes, when you’re looking to hire someone… you have to dispel your doubts.",
+          "This sword will give you the power to do so.",
+        ],
+        prompt: null,
+      };
+      this.dialogue.open(narrator, null);
+    });
   }
 
   // --- collision query ---------------------------------------------------
