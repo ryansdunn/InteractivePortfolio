@@ -77,35 +77,65 @@ const AudioManager = {
   },
 
   // --- internals ---------------------------------------------------------
+
+  // Decoded AudioBuffer cache keyed by src path.
+  _bufferCache: {},
+
   _makeVoice(a) {
     const gain = this.ctx.createGain();
     gain.gain.value = 0.0001;
     gain.connect(this.master);
+    const voice = { nodes: [], gain };
 
-    // A small stack of detuned oscillators makes a warmer "pad" than one tone.
-    const nodes = [];
+    if (a.src) {
+      // Real audio file: fetch → decode → loop. Starts as soon as buffer is ready.
+      this._loadBuffer(a.src).then((buffer) => {
+        if (!buffer) return;
+        const source = this.ctx.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true;
+        source.connect(gain);
+        source.start();
+        voice.nodes.push(source);
+      });
+      return voice;
+    }
+
+    // Synthesised drone — fallback for biomes without a real track yet.
     [-a.detune, 0, a.detune].forEach((cents, i) => {
       const osc = this.ctx.createOscillator();
       osc.type = a.type;
-      osc.frequency.value = a.freq * (i === 0 ? 0.5 : 1); // sub on the first
+      osc.frequency.value = a.freq * (i === 0 ? 0.5 : 1);
       osc.detune.value = cents;
       const og = this.ctx.createGain();
       og.gain.value = i === 0 ? 0.5 : 0.35;
       osc.connect(og).connect(gain);
       osc.start();
-      nodes.push(osc);
+      voice.nodes.push(osc);
     });
-
-    // Slow LFO on the master gain → gentle breathing motion.
     const lfo = this.ctx.createOscillator();
     const lfoGain = this.ctx.createGain();
     lfo.frequency.value = 0.08;
     lfoGain.gain.value = a.gain * 0.25;
     lfo.connect(lfoGain).connect(gain.gain);
     lfo.start();
-    nodes.push(lfo);
+    voice.nodes.push(lfo);
 
-    return { nodes, gain };
+    return voice;
+  },
+
+  async _loadBuffer(src) {
+    if (this._bufferCache[src]) return this._bufferCache[src];
+    try {
+      const res = await fetch(src);
+      const raw = await res.arrayBuffer();
+      const buffer = await this.ctx.decodeAudioData(raw);
+      this._bufferCache[src] = buffer;
+      return buffer;
+    } catch (e) {
+      console.warn('AudioManager: could not load', src, e);
+      return null;
+    }
   },
 
   _fadeOutAndStop(voice) {

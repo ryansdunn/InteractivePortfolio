@@ -30,7 +30,7 @@ const WORLD = {
       anchor: { tx: 60, ty: 60 }, flavor: 'wilds',
       hudColor: '#8aa0c8',
       palette: { accent: 0x8aa0c8 },
-      ambient: { type: 'sine', freq: 98, gain: 0.04, detune: 4 },
+      ambient: { type: 'sine', freq: 98, gain: 0.7, detune: 4, src: 'assets/audio/wilds.mp3' },
     },
     dev: {
       name: 'Dev', subtitle: 'a lab among the ruins',
