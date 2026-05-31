@@ -118,10 +118,10 @@ const AudioManager = {
   // --- internals ---------------------------------------------------------
 
   _ATTACK_SFX: [
-    'assets/audio/attack_sounds/Untitled 2_1 #10.1.aif',
-    'assets/audio/attack_sounds/Untitled 2_1 #10.3.aif',
-    'assets/audio/attack_sounds/Untitled 2_1 #10.5.aif',
-    'assets/audio/attack_sounds/Untitled 2_1 #10.7.aif',
+    'assets/audio/attack_sounds/damage.wav',
+    'assets/audio/attack_sounds/damage_1.wav',
+    'assets/audio/attack_sounds/damage_2.wav',
+    'assets/audio/attack_sounds/damage_3.wav',
   ],
   _DAMAGE_SFX: [
     'assets/audio/damage-taken-sounds/damage1.wav',
