@@ -43,3 +43,29 @@ const DOUBTS = {
     hp: 2, speed: 60, damage: 1, knockback: 220,
   },
 };
+
+/* =============================================================================
+ * THE BOSS — the cave encounter (BossScene)
+ * -----------------------------------------------------------------------------
+ * Once the visitor has met every part of Ryan (the living portrait completes),
+ * the scattered doubts gather beneath the crossroads into one final form: a
+ * giant four-armed crab — the deepest objection of all, "Why you?". You face
+ * three escalating waves of the ordinary doubts, then the boss itself.
+ *
+ * BOSS_WAVES — each entry is the list of DOUBTS ids spawned for that wave.
+ * ========================================================================== */
+
+const BOSS = {
+  id: 'final_doubt',
+  name: 'THE FINAL DOUBT',
+  text: '"Why you?"',
+  // Reddish crab shell, hot accent. Drawn by AssetFactory.generateBoss.
+  palette: { shell: 0x8a1f2e, shellHi: 0xc23a4a, claw: 0x6b1622, eye: 0xffe14d },
+  hp: 24, speed: 40, damage: 1, knockback: 270,
+};
+
+const BOSS_WAVES = [
+  ['too_junior', 'too_junior', 'just_a_coder'],
+  ['ships_solo', 'will_he_stay', 'culture_fit', 'too_junior'],
+  ['ships_solo', 'just_a_coder', 'will_he_stay', 'culture_fit', 'too_junior'],
+];

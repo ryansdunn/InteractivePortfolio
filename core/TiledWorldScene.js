@@ -40,6 +40,7 @@ class TiledWorldScene extends Phaser.Scene {
 
     this._buildPlayer(data);
     this._buildNpcs();
+    this._buildGuide();
     this._buildSigns();
     this._buildFragments();
 
@@ -48,6 +49,8 @@ class TiledWorldScene extends Phaser.Scene {
     this.keys = this.input.keyboard.addKeys('W,A,S,D,E,J');
     this.interactKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.facing = { x: 0, y: 1 };
+    this._paused = false;
+    this.input.keyboard.on('keydown-ESC', () => this._togglePause());
 
     this.dialogue = new DialogueBox(this);
     this.combat = new CombatSystem(this);
@@ -63,6 +66,12 @@ class TiledWorldScene extends Phaser.Scene {
     this.currentBiome = null;
     this.discoveredFragments = new Set();
 
+    // When the living portrait completes (all main characters met), the doubts
+    // gather below the crossroads. Flag it; the update loop springs the cave
+    // transition the moment the player is free of dialogue/panels.
+    this._bossPending = false;
+    GameState.events.once('profile:complete', () => { this._bossPending = true; });
+
     const startAudio = () => { AudioManager.resume(); this.currentBiome = null; this._updateBiome(true); };
     this.input.once('pointerdown', startAudio);
     this.input.keyboard.once('keydown', startAudio);
@@ -70,33 +79,88 @@ class TiledWorldScene extends Phaser.Scene {
     this._updateBiome(true);
     this.cameras.main.fadeIn(450, 0, 0, 0);
 
-    if (this._shouldShowSwordIntro(data)) this._scheduleSwordIntro();
+    if (this._shouldShowWeaponIntro(data)) this._scheduleWeaponIntro();
   }
 
-  _shouldShowSwordIntro(data) {
-    // Only on the default wilds spawn (not a biome deep-link), and only once per session.
+  _shouldShowWeaponIntro(data) {
     if (data && data.spawn && data.spawn !== 'wilds') return false;
     if (sessionStorage.getItem('sword-intro-seen')) return false;
     return true;
   }
 
-  _scheduleSwordIntro() {
+  _scheduleWeaponIntro() {
     sessionStorage.setItem('sword-intro-seen', '1');
     this.time.delayedCall(700, () => {
-      AudioManager.swordFanfare();
-      const narrator = {
-        id: '__narrator__',
-        name: '⚔  The Crossroads',
-        role: 'an ancient voice',
-        world: 'wilds',
-        dialogue: [
-          "Sometimes, when you’re looking to hire someone… you have to dispel your doubts.",
-          "This sword will give you the power to do so.",
-        ],
-        prompt: null,
-      };
-      this.dialogue.open(narrator, null);
+      this.dialogue.open(CHARACTERS.guide, () => this._showWeaponChoice());
     });
+  }
+
+  _showWeaponChoice() {
+    Portfolio.modalOpen = true;
+    // Works from all contexts: intro, NPC, pause menu.
+    document.getElementById('pause-menu').classList.remove('open');
+    const el = document.getElementById('weapon-choice');
+    el.classList.add('open');
+
+    const pick = (type) => {
+      el.classList.remove('open');
+      Portfolio.modalOpen = false;
+      this._paused = false;
+      this.combat.setStarterWeapon(type);
+      AudioManager.swordFanfare();
+      Portfolio.toast(
+        type === 'sword'
+          ? 'Sword equipped — press J or click to swing'
+          : 'Crossbow equipped — press J or click to fire a bolt',
+        '#8aa0c8'
+      );
+    };
+
+    document.getElementById('wc-sword').onclick = () => pick('sword');
+    document.getElementById('wc-crossbow').onclick = () => pick('crossbow');
+  }
+
+  // --- Guide NPC (code-placed near spawn) -----------------------------------
+  _buildGuide() {
+    const c = CHARACTERS.guide;
+    // A few tiles north of the player spawn so they meet the Guide immediately.
+    const x = this.spawnPx.x;
+    const y = this.spawnPx.y - 64;
+    const sprite = this.physics.add.staticImage(x, y, 'npc-guide').setDepth(y);
+    this.add.text(x, y - 24, c.name, {
+      fontFamily: 'monospace', fontSize: '11px', color: '#fff',
+      backgroundColor: '#00000099', padding: { x: 4, y: 2 },
+    }).setOrigin(0.5).setDepth(y + 1);
+    const bubble = this.add.image(x + 14, y - 20, 'prompt-bubble').setDepth(y + 2);
+    this.tweens.add({ targets: bubble, y: bubble.y - 4, yoyo: true, repeat: -1, duration: 700 });
+    const met = this.add.text(x, y - 36, '✓', {
+      fontFamily: 'monospace', fontSize: '12px', color: '#7CFFb0',
+    }).setOrigin(0.5).setDepth(y + 2).setVisible(GameState.hasMet(c.id));
+    this.npcs.push({ character: c, sprite, bubble, metMark: met });
+  }
+
+  _togglePause() {
+    // Don't open pause while another overlay (dialogue, weapon choice) is active.
+    const weaponChoiceOpen = document.getElementById('weapon-choice').classList.contains('open');
+    if (!this._paused && (this.dialogue.isOpen || weaponChoiceOpen)) return;
+
+    this._paused = !this._paused;
+    const el = document.getElementById('pause-menu');
+
+    if (this._paused) {
+      Portfolio.modalOpen = true;
+      el.innerHTML =
+        '<p class="pm-title">PAUSED</p>' +
+        '<p class="pm-hint">WASD move &nbsp;·&nbsp; SPACE / E talk &nbsp;·&nbsp; J or click attack &nbsp;·&nbsp; Q switch weapon &nbsp;·&nbsp; M music</p>' +
+        '<button class="pm-resume" id="pm-resume">Resume &nbsp;(ESC)</button>' +
+        '<button class="pm-change-weapon" id="pm-change-weapon">Switch Weapon &nbsp;(Q)</button>';
+      el.classList.add('open');
+      document.getElementById('pm-resume').onclick = () => this._togglePause();
+      document.getElementById('pm-change-weapon').onclick = () => { this._togglePause(); this.combat.cycleWeapon(); };
+    } else {
+      Portfolio.modalOpen = false;
+      el.classList.remove('open');
+    }
   }
 
   // --- collision query ---------------------------------------------------
@@ -211,6 +275,36 @@ class TiledWorldScene extends Phaser.Scene {
     this._handleInteract(blocked);
     this.combat.update(delta, blocked);
     this.player.setDepth(this.player.y);
+
+    if (this._bossPending && !blocked && !this.combat.playerKnocked()) {
+      this._bossPending = false;
+      this._beginBossTransition();
+    }
+  }
+
+  // --- finale: the Guide sends you down into the cave --------------------
+  _beginBossTransition() {
+    Portfolio.setHint('');
+    const weapon = this.combat.weapon;
+    const c = {
+      name: 'The Guide', role: 'keeper of the crossroads', world: 'wilds',
+      dialogue: [
+        "You've met all of him now — the builder, the song, the teacher. " +
+          'The portrait is whole. But hold on.',
+        'Feel that? The doubts you scattered across the island are pulling ' +
+          'together beneath us, into one last shape. It wants a final word.',
+        'The ground is opening. Take your blade and go down — finish this. ' +
+          "I'll keep the lamps lit up here.",
+      ],
+    };
+    this.dialogue.open(c, () => {
+      this.cameras.main.shake(600, 0.008);
+      this.cameras.main.fadeOut(700, 0, 0, 0);
+      this.cameras.main.once('camerafadeoutcomplete', () => {
+        this.combat._clear();
+        this.scene.start('Boss', { weapon });
+      });
+    });
   }
 
   _move(blocked) {
@@ -301,10 +395,62 @@ class TiledWorldScene extends Phaser.Scene {
   _doInteract() {
     const n = this.nearbyNpc;
     Portfolio.setHint('');
-    this.dialogue.open(n.character, () => {
+    if (n.character.id === 'guide') { this._doGuideInteract(n); return; }
+
+    // First time meeting a main character? They arm you for the road ahead:
+    // #1 → both sword & crossbow, #2 → bombs, #3 → (the boss awaits).
+    const giftIndex = (n.character.main && !GameState.hasMet(n.character.id))
+      ? GameState.entries().length + 1 : 0;
+    const giftLine = this._weaponGiftLine(giftIndex);
+    const character = giftLine
+      ? { ...n.character, dialogue: [...n.character.dialogue, giftLine] }
+      : n.character;
+
+    this.dialogue.open(character, () => {
       GameState.recordMeeting(n.character);
       n.metMark.setVisible(true);
+      this._grantWeapons(giftIndex);
       if (n.character.panel) Portfolio.infoPanel.open(n.character);
+    });
+  }
+
+  // The in-dialogue line where a character hands over a weapon.
+  _weaponGiftLine(index) {
+    if (index === 1) {
+      return "Wait — before you wander on. You can't meet what's out here half-armed. " +
+        'Take both blade and bow: the sword for when they\'re close, the crossbow for ' +
+        'when they\'re not. Tap Q to switch between them.';
+    }
+    if (index === 2) {
+      return 'And take these — a satchel of bombs. Lob them into a crowd of doubts and ' +
+        'let them scatter. Q cycles through everything you\'re carrying now.';
+    }
+    return null;
+  }
+
+  _grantWeapons(index) {
+    if (index === 1) {
+      this.combat.unlockWeapon('sword');
+      this.combat.unlockWeapon('crossbow');
+      AudioManager.swordFanfare();
+    } else if (index === 2) {
+      this.combat.unlockWeapon('bombs');
+      AudioManager.swordFanfare();
+    }
+  }
+
+  _doGuideInteract(n) {
+    // After first meeting, use the short revisit line instead of the full intro.
+    const alreadyMet = sessionStorage.getItem('sword-intro-seen');
+    const c = alreadyMet
+      ? { ...CHARACTERS.guide, dialogue: CHARACTERS.guide.revisitDialogue, prompt: null }
+      : CHARACTERS.guide;
+    this.dialogue.open(c, () => {
+      GameState.recordMeeting(CHARACTERS.guide);
+      n.metMark.setVisible(true);
+      // First visit hands you a starting weapon; later visits just swap (Q).
+      if (alreadyMet) this.combat.cycleWeapon();
+      else this._showWeaponChoice();
     });
   }
 }

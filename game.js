@@ -68,6 +68,7 @@ window.addEventListener('load', () => {
       BootScene,
       TitleScene,
       TiledWorldScene,
+      BossScene,
     ],
   };
 

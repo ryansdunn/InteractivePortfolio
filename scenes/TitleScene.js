@@ -38,7 +38,7 @@ class TitleScene extends Phaser.Scene {
     const spacing = 150, startX = W / 2 - ((named.length - 1) * spacing) / 2;
     named.forEach(([key, b], i) => this._quickLink(key, b, startX + i * spacing, H * 0.74 + 26));
 
-    this.add.text(W / 2, H - 28, 'WASD / Arrows move · SPACE or E talk · J or click swing · M music', { fontFamily: 'monospace', fontSize: '12px', color: '#6b7aa0' }).setOrigin(0.5);
+    this.add.text(W / 2, H - 28, 'WASD / Arrows move · SPACE or E talk · J or click attack · Q switch weapon · M music', { fontFamily: 'monospace', fontSize: '12px', color: '#6b7aa0' }).setOrigin(0.5);
   }
 
   _enterButton(x, y) {

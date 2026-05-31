@@ -14,6 +14,39 @@ const GameState = {
   attach(game) {
     this.game = game;
     if (!game.registry.has('met')) game.registry.set('met', []);
+    if (!game.registry.has('weapons')) game.registry.set('weapons', []);
+  },
+
+  // --- weapon inventory (persists across scenes via the registry) --------
+  /** Ids of weapons the visitor has unlocked, in unlock order. */
+  weapons() {
+    return this.game.registry.get('weapons') || [];
+  },
+
+  hasWeapon(id) {
+    return this.weapons().includes(id);
+  },
+
+  /** Unlock a weapon (idempotent). Makes it the current weapon if none is set. */
+  unlockWeapon(id) {
+    const w = this.weapons();
+    if (!w.includes(id)) { w.push(id); this.game.registry.set('weapons', w); }
+    if (!this.game.registry.get('weapon')) this.game.registry.set('weapon', id);
+  },
+
+  /** The starting pick (sword OR crossbow) — replaces the inventory with one. */
+  setStarterWeapon(id) {
+    this.game.registry.set('weapons', [id]);
+    this.game.registry.set('weapon', id);
+  },
+
+  /** The weapon currently in hand (defaults to 'sword' for deep-link entries). */
+  currentWeapon() {
+    return this.game.registry.get('weapon') || 'sword';
+  },
+
+  setCurrentWeapon(id) {
+    this.game.registry.set('weapon', id);
   },
 
   get events() {

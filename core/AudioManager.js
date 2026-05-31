@@ -115,6 +115,36 @@ const AudioManager = {
     });
   },
 
+  /** A short percussive blast — played when a thrown bomb explodes. */
+  boom() {
+    if (!this.enabled) return;
+    this.resume();
+    const now = this.ctx.currentTime;
+    // Low body: a sine dropping in pitch.
+    const g = this.ctx.createGain();
+    g.connect(this.master);
+    g.gain.setValueAtTime(0.45, now);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(40, now + 0.45);
+    osc.connect(g);
+    osc.start(now); osc.stop(now + 0.5);
+    // Noise burst for the crack.
+    const len = Math.floor(this.ctx.sampleRate * 0.25);
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const ng = this.ctx.createGain();
+    ng.gain.setValueAtTime(0.3, now);
+    ng.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buf;
+    noise.connect(ng).connect(this.master);
+    noise.start(now);
+  },
+
   // --- internals ---------------------------------------------------------
 
   _ATTACK_SFX: [

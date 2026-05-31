@@ -23,9 +23,75 @@ const AssetFactory = {
     this.generatePlayer(scene);
     this.generatePromptBubble(scene);
     this.generateSword(scene);
+    this.generateCrossbow(scene);
+    this.generateBolt(scene);
+    this.generateBomb(scene);
+    this.generateCaveTiles(scene);
+    this.generateBoss(scene);
 
     Object.values(CHARACTERS).forEach((c) => this.generateNpc(scene, c));
     Object.values(DOUBTS).forEach((d) => this.generateDoubt(scene, d));
+  },
+
+  // --- cave arena tiles (BossScene) --------------------------------------
+  generateCaveTiles(scene) {
+    // 16×16 floor — dark stone with a faint speckle so the tiling reads.
+    this._tex(scene, 'cave-floor', 16, 16, (g) => {
+      g.fillStyle(0x231f2b, 1).fillRect(0, 0, 16, 16);
+      g.fillStyle(0x2b2636, 1).fillRect(0, 0, 16, 2);
+      g.fillStyle(0x1a1722, 1).fillRect(3, 6, 2, 2).fillRect(10, 10, 2, 2).fillRect(7, 12, 2, 2);
+    });
+    // 16×16 wall — lit top edge, dark base, so a ring of them reads as cave rock.
+    this._tex(scene, 'cave-wall', 16, 16, (g) => {
+      g.fillStyle(0x14101a, 1).fillRect(0, 0, 16, 16);
+      g.fillStyle(0x2c2436, 1).fillRect(0, 0, 16, 5);
+      g.fillStyle(0x0c0911, 1).fillRect(0, 13, 16, 3);
+      g.fillStyle(0x3a3148, 0.5).fillRect(2, 2, 4, 2).fillRect(9, 3, 4, 2);
+    });
+  },
+
+  // --- the boss: a giant four-armed crab ---------------------------------
+  generateBoss(scene) {
+    const c = BOSS.palette;
+    // Body: a broad reddish shell, two eye-stalks, an angry maw. Arms are a
+    // separate 'boss-claw' texture so they can swipe independently.
+    this._tex(scene, 'boss-crab', 124, 90, (g) => {
+      g.fillStyle(0x000000, 0.35).fillEllipse(62, 84, 100, 14);     // shadow
+      // legs poking out beneath the shell
+      g.fillStyle(c.claw, 1);
+      [-44, -28, 28, 44].forEach((dx) => {
+        g.fillTriangle(62 + dx, 58, 62 + dx + (dx < 0 ? -10 : 10), 78, 62 + dx + (dx < 0 ? 4 : -4), 62);
+      });
+      // shell
+      g.fillStyle(c.shell, 1).fillEllipse(62, 48, 108, 62);
+      g.fillStyle(c.shellHi, 1).fillEllipse(62, 40, 98, 42);
+      g.fillStyle(c.shell, 1).fillEllipse(62, 52, 92, 40);
+      // shell cracks / texture
+      g.fillStyle(0x000000, 0.18).fillRect(34, 44, 5, 4).fillRect(82, 40, 5, 4).fillRect(58, 30, 6, 3);
+      // eye-stalks + eyes
+      g.fillStyle(c.shell, 1).fillRect(46, 8, 5, 18).fillRect(73, 8, 5, 18);
+      g.fillStyle(0xffffff, 1).fillCircle(48, 8, 8).fillCircle(76, 8, 8);
+      g.fillStyle(c.eye, 1).fillCircle(48, 8, 6).fillCircle(76, 8, 6);
+      g.fillStyle(0x10101a, 1).fillCircle(48, 8, 3).fillCircle(76, 8, 3);
+      // angry brow
+      g.fillStyle(c.claw, 1).fillTriangle(40, 4, 56, 12, 40, 12).fillTriangle(84, 4, 68, 12, 84, 12);
+      // maw with jagged teeth
+      g.fillStyle(0x2a0a10, 1).fillRect(48, 60, 28, 10);
+      g.fillStyle(0xf2e6c8, 1);
+      for (let x = 50; x < 74; x += 5) g.fillTriangle(x, 60, x + 4, 60, x + 2, 66);
+    });
+
+    // Claw arm, pointing right; origin set near the base at runtime so it
+    // pivots from the shoulder when it swipes.
+    this._tex(scene, 'boss-claw', 48, 34, (g) => {
+      g.fillStyle(c.shell, 1).fillRect(0, 13, 22, 9);              // arm
+      g.fillStyle(c.shellHi, 1).fillRect(0, 13, 22, 3);
+      g.fillStyle(c.claw, 1).fillEllipse(26, 17, 20, 22);         // pincer base
+      g.fillTriangle(26, 8, 48, 1, 36, 17);                       // upper jaw
+      g.fillTriangle(26, 26, 48, 33, 36, 17);                     // lower jaw
+      g.fillStyle(0x2a0a10, 1).fillTriangle(30, 14, 44, 9, 36, 17); // mouth gap
+      g.fillStyle(c.shellHi, 0.6).fillRect(20, 11, 8, 3);
+    });
   },
 
   // --- region tiles + decorations ----------------------------------------
@@ -226,6 +292,57 @@ const AssetFactory = {
       g.fillStyle(0xb8c8d8, 1).fillRect(34, 3, 4, 3);
       g.fillStyle(0xe8f4ff, 1).fillRect(34, 3, 3, 1);
       g.fillStyle(0xb8c8d8, 1).fillRect(37, 4, 3, 1);
+    });
+  },
+
+  // --- pixel-art crossbow (pointing right; rotated at runtime per facing) ---
+  generateCrossbow(scene) {
+    // 26 wide x 10 tall. Compact crossbow — tip on right, stock on left.
+    this._tex(scene, 'crossbow', 26, 10, (g) => {
+      // stock
+      g.fillStyle(0x7a4a2a, 1).fillRect(0, 3, 14, 4);
+      g.fillStyle(0xa06438, 1).fillRect(0, 3, 14, 2);
+      // tiller / rail
+      g.fillStyle(0x5a3a20, 1).fillRect(14, 3, 8, 4);
+      g.fillStyle(0x8a6040, 1).fillRect(14, 3, 8, 2);
+      // bow limbs
+      g.fillStyle(0x4a4a5a, 1).fillRect(22, 0, 4, 10);
+      g.fillStyle(0x8a8a9a, 1).fillRect(22, 0, 4, 2).fillRect(22, 8, 4, 2);
+      // bowstring
+      g.lineStyle(1, 0xe8f4ff, 0.85);
+      g.beginPath().moveTo(24, 1).lineTo(20, 5).lineTo(24, 9).strokePath();
+      // bolt in groove
+      g.fillStyle(0xd8c090, 1).fillRect(8, 4, 12, 2);
+      g.fillStyle(0xffd98a, 1).fillRect(18, 3, 3, 1);
+    });
+  },
+
+  // --- crossbow bolt projectile (pointing right; rotated per facing) ------
+  generateBolt(scene) {
+    // 14 wide x 3 tall.
+    this._tex(scene, 'bolt', 14, 3, (g) => {
+      // fletching
+      g.fillStyle(0xff6b6b, 1).fillRect(0, 0, 3, 1).fillRect(0, 2, 3, 1);
+      // shaft
+      g.fillStyle(0xd8c090, 1).fillRect(3, 1, 8, 1);
+      // tip
+      g.fillStyle(0xb8c8d8, 1).fillRect(11, 0, 3, 3);
+      g.fillStyle(0xe8f4ff, 1).fillRect(11, 0, 2, 1);
+    });
+  },
+
+  // --- throwable bomb (held in hand + the tossed projectile) -------------
+  generateBomb(scene) {
+    // 16×18: a round iron bomb with a short fuse and a lit spark.
+    this._tex(scene, 'bomb', 16, 18, (g) => {
+      g.fillStyle(0x000000, 0.3).fillEllipse(8, 17, 12, 3);   // shadow
+      g.fillStyle(0x20242e, 1).fillCircle(8, 11, 6);          // body
+      g.fillStyle(0x3a4150, 1).fillCircle(8, 11, 6).fillCircle(10, 9, 2); // shading + glint
+      g.fillStyle(0x10131a, 1).fillCircle(8, 12, 5);
+      g.fillStyle(0x4a5163, 1).fillCircle(6, 9, 1.5);
+      g.fillStyle(0x7a4a2a, 1).fillRect(9, 2, 2, 5);          // fuse
+      g.fillStyle(0xffd98a, 1).fillCircle(11, 2, 2);          // spark
+      g.fillStyle(0xff8a3a, 1).fillCircle(11, 2, 1);
     });
   },
 

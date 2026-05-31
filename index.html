@@ -24,10 +24,26 @@
   <div id="hearts" class="overlay"></div>
   <div id="fragment" class="overlay"></div>
   <div id="dialogue-box"></div>
+  <div id="pause-menu"></div>
+  <div id="weapon-choice">
+    <p class="wc-title">Choose your weapon</p>
+    <div class="wc-options">
+      <button class="wc-btn" id="wc-sword">
+        <strong>Sword</strong>
+        <small>Close range<br>Wide arc swing</small>
+      </button>
+      <button class="wc-btn" id="wc-crossbow">
+        <strong>Crossbow</strong>
+        <small>Long range<br>Fires a bolt</small>
+      </button>
+    </div>
+  </div>
   <div id="info-panel"></div>
   <div id="music-player"></div>
   <div id="hint" class="overlay"></div>
   <div id="toast" class="overlay"></div>
+  <div id="boss-bar"></div>
+  <div id="victory"></div>
 
   <!-- Load order matters (classic scripts, global scope, no modules):
        1) config  2) core engine  3) components  4) scenes/worlds  5) bootstrap -->
@@ -56,6 +72,7 @@
   <!-- 4) Scenes -->
   <script src="scenes/BootScene.js"></script>
   <script src="scenes/TitleScene.js"></script>
+  <script src="scenes/BossScene.js"></script>
 
   <!-- 5) Bootstrap (last) -->
   <script src="game.js"></script>

@@ -31,19 +31,21 @@ const CHARACTERS = {
     id: 'guide',
     name: 'The Guide',
     role: 'keeper of the crossroads',
-    world: 'hub',
-    grants: 'sword', // completing this conversation gives the player the sword
-    position: { tx: 9, ty: 4 }, // relative to the hub origin (just above spawn)
+    world: 'wilds',
+    position: { tx: 9, ty: 4 },
     sprite: { body: 0x55607a, accent: 0x8aa0c8, hair: 0xd8e2f2 },
     dialogue: [
       "Hold on, traveler. You came to find out who Ryan is — but you won't get " +
         "far defenseless. Out here, doubts take shape and they bite.",
-      "Every reason not to hire him wanders these fields with teeth: \"too " +
-        "junior,\" \"just a coder,\" \"will he even stay.\" They'll chase you " +
-        "the moment you stop paying attention.",
-      "So take this. It's dangerous to go alone.\n\n" +
-        "Swing it (press J, or click) and you can cut a doubt down. The more of " +
-        "Ryan you discover, the smaller they get. Now — go meet him.",
+      "Every reason not to hire him wanders these fields: \"too junior,\" " +
+        "\"just a coder,\" \"will he even stay.\" They'll chase you the moment " +
+        "you stop paying attention.",
+      "You'll need something to deal with them. I've got two weapons here — " +
+        "a sword for close quarters, or a crossbow if you prefer your distance.\n\n" +
+        "Choose what suits you. The doubts don't care either way.",
+    ],
+    revisitDialogue: [
+      "Reconsidering? No shame in it. Here — swap it out whenever you like.",
     ],
     prompt:
       "Three paths lead out from here: the lab to the west, a memory to the " +
