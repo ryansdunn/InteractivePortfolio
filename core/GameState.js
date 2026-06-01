@@ -40,9 +40,9 @@ const GameState = {
     this.game.registry.set('weapon', id);
   },
 
-  /** The weapon currently in hand (defaults to 'sword' for deep-link entries). */
+  /** The weapon currently in hand, or null if none has been granted yet. */
   currentWeapon() {
-    return this.game.registry.get('weapon') || 'sword';
+    return this.game.registry.get('weapon') || null;
   },
 
   setCurrentWeapon(id) {

@@ -159,6 +159,12 @@ const AudioManager = {
     'assets/audio/damage-taken-sounds/damage3.wav',
     'assets/audio/damage-taken-sounds/damage4.wav',
   ],
+  _CROSSBOW_SHOOT_SFX: [
+    'assets/audio/crossbow-shooting-sounds/crossbow-shoot.wav',
+  ],
+  _CROSSBOW_HIT_SFX: [
+    'assets/audio/crossbow-attack-landing-sound/crossbow-shoot.wav',
+  ],
 
   /** Play a random sword-swing sound. */
   attackSound() {
@@ -170,6 +176,18 @@ const AudioManager = {
   damageSound() {
     const srcs = this._DAMAGE_SFX;
     this.playSfx(srcs[Math.floor(Math.random() * srcs.length)], 0.65);
+  },
+
+  /** Play the crossbow firing sound. */
+  crossbowShootSound() {
+    const srcs = this._CROSSBOW_SHOOT_SFX;
+    this.playSfx(srcs[Math.floor(Math.random() * srcs.length)], 0.7);
+  },
+
+  /** Play the crossbow bolt-hit sound. */
+  crossbowHitSound() {
+    const srcs = this._CROSSBOW_HIT_SFX;
+    this.playSfx(srcs[Math.floor(Math.random() * srcs.length)], 0.7);
   },
 
   /** One-shot SFX: load (cached), decode, play immediately. */

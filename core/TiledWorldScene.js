@@ -55,6 +55,11 @@ class TiledWorldScene extends Phaser.Scene {
     this.dialogue = new DialogueBox(this);
     this.combat = new CombatSystem(this);
 
+    // Deep-link entries skip the weapon intro; give a default sword so they're not unarmed.
+    if (!this._shouldShowWeaponIntro(data) && !GameState.currentWeapon()) {
+      this.combat.setStarterWeapon('sword');
+    }
+
     // Wire mobile action button (context-aware: dialogue → talk → attack)
     Portfolio.mobileControls.onAction = () => {
       if (this.dialogue.isOpen) { this.dialogue.advance(); return; }
@@ -149,14 +154,20 @@ class TiledWorldScene extends Phaser.Scene {
 
     if (this._paused) {
       Portfolio.modalOpen = true;
+      const aimLabel = () => this.combat.swordMouseAim ? 'Sword Aim: Mouse' : 'Sword Aim: Movement';
       el.innerHTML =
         '<p class="pm-title">PAUSED</p>' +
         '<p class="pm-hint">WASD move &nbsp;·&nbsp; SPACE / E talk &nbsp;·&nbsp; J or click attack &nbsp;·&nbsp; Q switch weapon &nbsp;·&nbsp; M music</p>' +
         '<button class="pm-resume" id="pm-resume">Resume &nbsp;(ESC)</button>' +
-        '<button class="pm-change-weapon" id="pm-change-weapon">Switch Weapon &nbsp;(Q)</button>';
+        '<button class="pm-change-weapon" id="pm-change-weapon">Switch Weapon &nbsp;(Q)</button>' +
+        `<button class="pm-sword-aim" id="pm-sword-aim">${aimLabel()}</button>`;
       el.classList.add('open');
       document.getElementById('pm-resume').onclick = () => this._togglePause();
       document.getElementById('pm-change-weapon').onclick = () => { this._togglePause(); this.combat.cycleWeapon(); };
+      document.getElementById('pm-sword-aim').onclick = () => {
+        this.combat.swordMouseAim = !this.combat.swordMouseAim;
+        document.getElementById('pm-sword-aim').textContent = aimLabel();
+      };
     } else {
       Portfolio.modalOpen = false;
       el.classList.remove('open');

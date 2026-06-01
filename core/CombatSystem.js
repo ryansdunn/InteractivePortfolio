@@ -32,7 +32,6 @@ class CombatSystem {
     this.bossMode = !!opts.bossMode;
     this.maxHearts = 5;
     this.health = this.maxHearts;
-    this.hasSword = true; // open world: armed from the start, never trapped
 
     this.invulnUntil = 0;
     this.kbUntil = 0;
@@ -64,6 +63,7 @@ class CombatSystem {
     this.bolts = scene.physics.add.group();
     scene.physics.add.overlap(this.bolts, this.enemies, (bolt, en) => {
       if (!en.active || !bolt.active) return;
+      AudioManager.crossbowHitSound();
       this._damage(en, bolt.x, bolt.y);
       this.bolts.remove(bolt, true, true);
     });
@@ -83,6 +83,7 @@ class CombatSystem {
       this._explode(x, y);
     });
 
+    this.swordMouseAim = true; // default: sword tracks the mouse like crossbow/bombs
     this._swinging = false;
     this.attackKey = scene.keys.J;
     this.switchKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
@@ -119,7 +120,7 @@ class CombatSystem {
 
   setWeapon(type) {
     this.weapon = type;
-    GameState.setCurrentWeapon(type);
+    if (type) GameState.setCurrentWeapon(type);
     this.sword.setVisible(type === 'sword');
     this.crossbow.setVisible(type === 'crossbow');
     this.bombHeld.setVisible(type === 'bombs');
@@ -127,8 +128,9 @@ class CombatSystem {
 
   /** Add a weapon to the inventory (progression reward). */
   unlockWeapon(type) {
+    const wasEmpty = !this.weapon;
     GameState.unlockWeapon(type);
-    if (!GameState.currentWeapon()) this.setWeapon(type);
+    if (wasEmpty) this.setWeapon(type);
   }
 
   /** The very first pick from the Guide — your single starting weapon. */
@@ -155,6 +157,12 @@ class CombatSystem {
   // Position the held weapon at the player's hand in idle/walk.
   _holdWeapon() {
     if (this._swinging) return;
+    if (!this.weapon) {
+      this.sword.setAlpha(0);
+      this.crossbow.setAlpha(0);
+      this.bombHeld.setAlpha(0);
+      return;
+    }
     const p = this.scene.player, f = this.scene.facing;
     if (this.weapon === 'crossbow') {
       const angle = this._mouseAngle(p);
@@ -172,10 +180,10 @@ class CombatSystem {
       this.sword.setAlpha(0);
       this.crossbow.setAlpha(0);
     } else {
-      const baseAngle = Math.atan2(f.y, f.x);
-      const ox = f.x * 8, oy = f.y * 8;
-      const depth = p.depth + (f.y > 0 ? -1 : 1);
-      this.sword.setPosition(p.x + ox, p.y + oy + 2).setRotation(baseAngle + 0.35).setDepth(depth);
+      const angle = this.swordMouseAim ? this._mouseAngle(p) : Math.atan2(f.y, f.x);
+      const ox = Math.cos(angle) * 8, oy = Math.sin(angle) * 8;
+      const depth = p.depth + (Math.sin(angle) > 0 ? -1 : 1);
+      this.sword.setPosition(p.x + ox, p.y + oy + 2).setRotation(angle + 0.35).setDepth(depth);
       this.sword.setAlpha(1);
       this.crossbow.setAlpha(0);
       this.bombHeld.setAlpha(0);
@@ -194,6 +202,7 @@ class CombatSystem {
 
   // --- combat ------------------------------------------------------------
   _tryAttack() {
+    if (!this.weapon) return;
     const now = this.scene.time.now;
     if (now < this.attackCdUntil) return;
     if (this.weapon === 'crossbow') {
@@ -210,9 +219,9 @@ class CombatSystem {
 
   _swingSword() {
     const f = this.scene.facing, p = this.scene.player;
-    const baseAngle = Math.atan2(f.y, f.x);
+    const baseAngle = this.swordMouseAim ? this._mouseAngle(p) : Math.atan2(f.y, f.x);
     const swingSpan = 2.2;
-    const ox = f.x * 8, oy = f.y * 8;
+    const ox = Math.cos(baseAngle) * 8, oy = Math.sin(baseAngle) * 8;
 
     AudioManager.attackSound();
     this._swinging = true;
@@ -220,7 +229,7 @@ class CombatSystem {
       .setPosition(p.x + ox, p.y + oy + 2)
       .setRotation(baseAngle - swingSpan / 2)
       .setAlpha(1).setScale(1.0)
-      .setDepth(p.depth + (f.y > 0 ? -1 : 1));
+      .setDepth(p.depth + (Math.sin(baseAngle) > 0 ? -1 : 1));
 
     this.scene.tweens.add({
       targets: this.sword,
@@ -231,11 +240,12 @@ class CombatSystem {
     });
 
     const hitR = 46;
+    const ax = Math.cos(baseAngle), ay = Math.sin(baseAngle);
     this.enemies.getChildren().slice().forEach((en) => {
       if (!en.active) return;
       const dx = en.x - p.x, dy = en.y - p.y, dist = Math.hypot(dx, dy);
       if (dist > hitR) return;
-      if (dist > 22 && (dx * f.x + dy * f.y) <= 0) return;
+      if (dist > 22 && (dx * ax + dy * ay) <= 0) return;
       this._damage(en, p.x, p.y);
     });
   }
@@ -244,7 +254,7 @@ class CombatSystem {
     const p = this.scene.player;
     const angle = this._mouseAngle(p);
     const fx = Math.cos(angle), fy = Math.sin(angle);
-    AudioManager.attackSound();
+    AudioManager.crossbowShootSound();
     const bolt = this.bolts.create(p.x + fx * 14, p.y + fy * 14, 'bolt');
     bolt.setDepth(1e6).setRotation(angle);
     bolt._origin = { x: p.x, y: p.y };
@@ -403,6 +413,7 @@ class CombatSystem {
 
   // --- roaming spawner ---------------------------------------------------
   _maintain() {
+    if (!this.weapon) return;
     const p = this.scene.player;
     const alive = this.enemies.getChildren().filter((e) => e.active).length;
     const types = BIOME_DOUBTS[this.scene.currentBiome] || BIOME_DOUBTS.wilds;
