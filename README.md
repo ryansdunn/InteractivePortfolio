@@ -7,8 +7,7 @@ people you meet are personifications of real projects, music, and teaching,
 dead-end paths) tell their own quiet stories. You enter as a recruiter; you leave
 understanding a person.
 
-Built with **Phaser 3 + vanilla JS** and a **Tiled** map. No runtime build step —
-drop it on GitHub Pages and it runs.
+Built with **Phaser 3 + vanilla JS** and a **Tiled** map.
 
 ## Run it
 
